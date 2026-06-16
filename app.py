@@ -299,4 +299,40 @@ if opcao_plataforma != "Selecione uma plataforma...":
                             
                         with col_n2:
                             if len(noticias) > 1:
-                                t2 = noticias[1].find('title').
+                                t2 = noticias[1].find('title').text
+                                l2 = noticias[1].find('link').text
+                                f2 = noticias[1].find('source').text if noticias[1].find('source') is not None else "Portal"
+                                st.markdown(f"""
+                                    <div class="card-noticia">
+                                        <h4 style='margin:0 0 12px 0; font-size:1rem; line-height:1.4;'><a class="noticia-link" href="{l2}" target="_blank">{t2}</a></h4>
+                                        <span style="color: #718096; font-weight: 500; font-size: 0.8rem;">Veículo: {f2}</span>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                except:
+                    st.write("Consulte os portais regulatórios para atualizações em tempo real.")
+
+            with aba_grafico:
+                st.write("")
+                st.markdown("<h3 style='font-size: 1.2rem; color: #4a5568;'>📊 Matriz de Risco Comparada</h3>", unsafe_allow_html=True)
+                st.markdown("Visão consolidada sobre o nível de rigor no tratamento de dados privados:")
+                df_grafico = pd.DataFrame(dados_risco_global)
+                st.bar_chart(data=df_grafico, x='Plataformas', y='Nível de Risco (0-100)', color='#104f7e')
+                
+    else:
+        st.error(f"Arquivo '{arquivo_alvo}' não encontrado.")
+else:
+    st.markdown("""
+        <div style="background-color: #ffffff; padding: 40px; border-radius: 16px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin-top: 20px; border: 1px solid #e2e8f0;">
+            <h3 style="color: #104f7e; margin-top:0; font-size: 1.4rem;">⚠️ Decodifique seus Direitos na Rede</h3>
+            <p style="color: #718096; max-width: 580px; margin: 10px auto 0 auto; font-size: 0.98rem; line-height: 1.6;">
+                Termos jurídicos extensos escondem monitoramentos complexos. Use o menu superior direito para selecionar uma plataforma e obter um relatório imediato gerado por inteligência artificial.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+# --- RODAPÉ ACADÊMICO ---
+st.markdown("""
+    <div class="footer">
+        Aluna FGV-ECMI: Keidy Alves Pizzetti Amaro &nbsp;•&nbsp; Orientador: Prof. Josir Gomes
+    </div>
+""", unsafe_allow_html=True)
