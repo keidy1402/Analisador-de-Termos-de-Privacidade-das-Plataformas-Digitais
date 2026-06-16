@@ -50,7 +50,7 @@ st.markdown("""
             border: 1.5px solid #104f7e !important;
             border-radius: 24px !important;
             padding: 2px 16px !important;
-            box-shadow: 0 4px 10px rgba(16, 79, 126, 0.04) !important;
+            box-shadow: 4px;
         }
         div[data-testid="stSelectbox"] div[role="button"] span {
             color: #104f7e !important;
