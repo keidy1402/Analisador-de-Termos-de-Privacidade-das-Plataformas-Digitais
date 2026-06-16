@@ -323,7 +323,7 @@ if opcao_plataforma != "Selecione uma plataforma...":
     else:
         st.error(f"Arquivo '{arquivo_alvo}' não encontrado.")
 else:
-st.title("Analisador de Termos de Privacidade das Plataformas Digitais")
+    st.title("Analisador de Termos de Privacidade das Plataformas Digitais")
     st.markdown("""
         <div style="background-color: #ffffff; padding: 40px; border-radius: 16px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin-top: 20px; border: 1px solid #e2e8f0;">
             <h3 style="color: #104f7e; margin-top:0; font-size: 1.3rem;">🌹 Decodifique seus Direitos na Rede</h3>
