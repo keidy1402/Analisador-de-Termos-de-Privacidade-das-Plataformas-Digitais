@@ -12,7 +12,7 @@ import requests
 st.set_page_config(
     page_title="Analisador de Privacidade",
     page_icon="🌹",
-    layout="wide"
+    layout="narrow"
 )
 
 # --- PALETA DE CORES E DESIGN REFINADO ---
