@@ -15,17 +15,41 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- PALETA DE CORES "A BELA E A FERA" (CSS CUSTOMIZADO) ---
-# Explorando o Azul Fera (#104f7e), Dourado (#f2c557), Creme (#f0dbb6), Vermelho Rosa (#c03131) e Fundo (#ebf2f7)
+# --- PALETA DE CORES E DESIGN REFINADO ---
+# Mudando a fonte geral, customizando o st.selectbox e aplicando o tema "A Bela e a Fera"
 st.markdown("""
     <style>
-        /* Fundo do site e fonte */
-        .stApp {
+        /* Importando uma fonte moderna e elegante */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+        /* Aplicação da fonte e do fundo do site */
+        .stApp, body, html, [data-testid="stWidgetLabel"] {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
             background-color: #ebf2f7;
             color: #221e23;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
         
+        /* Customização Estrita da Caixinha de Seleção (Selectbox) */
+        /* 1. Define o fundo azul escuro e a borda fina */
+        div[data-testid="stSelectbox"] div[role="button"] {
+            background-color: #104f7e !important;
+            border: 1px solid #104f7e !important;
+            border-radius: 8px !important;
+            padding: 4px 12px !important;
+        }
+        
+        /* 2. Deixa o texto da plataforma selecionada em azul claro */
+        div[data-testid="stSelectbox"] div[role="button"] span {
+            color: #ebf2f7 !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+        }
+        
+        /* 3. Garante que a setinha do menu também fique clara */
+        div[data-testid="stSelectbox"] svg {
+            fill: #ebf2f7 !important;
+        }
+
         /* Customização dos Títulos */
         h1 {
             color: #104f7e !important;
@@ -82,13 +106,14 @@ st.markdown("""
             background-color: #ffffff;
             padding: 20px;
             border-radius: 10px;
-            border-bottom: 4px solid #f2c557; /* Detalhe em Dourado */
+            border-bottom: 4px solid #f2c557;
             box-shadow: 0 4px 10px rgba(0,0,0,0.04);
             height: 100%;
         }
         
         /* Customização Estética das Abas (Tabs) */
         .stTabs [data-baseweb="tab"] {
+            font-family: 'Inter', sans-serif !important;
             font-weight: bold !important;
             color: #104f7e !important;
             font-size: 1.05rem !important;
@@ -172,7 +197,6 @@ dados_risco_global = {
 col_logo, col_titulo = st.columns([1, 5])
 
 with col_logo:
-    # Tenta carregar a sua logo. se não achar, coloca o emoji clássico da rosa
     if os.path.exists("logo.png"):
         st.image("logo.png", use_container_width=True)
     else:
@@ -182,11 +206,12 @@ with col_titulo:
     st.markdown("<h1>Analisador de Termos de Privacidade</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: #104f7e; font-size: 1.1rem; margin:0;'>Desmistificando a segurança digital e os seus direitos nas plataformas.</p>", unsafe_allow_html=True)
 
-st.write("") # Espaçador técnico
+st.write("") 
 
 # --- MENU DE SELEÇÃO E FILTRO ---
 col_select, _ = st.columns([2, 2])
 with col_select:
+    # A label (texto explicativo acima da caixa) respeita a nova fonte automática
     opcao_plataforma = st.selectbox("🎯 Escolha uma plataforma digital para auditar:", ["Selecione..."] + list(MAPA_PLATAFORMAS.keys()))
 
 st.divider()
@@ -199,13 +224,10 @@ if opcao_plataforma != "Selecione...":
         analise = analisar_termo_com_gemini(texto_contrato, opcao_plataforma)
         
         if analise:
-            # --- COMPACTAÇÃO POR ABAS (TABS) ---
-            # O site fica limpo e o usuário escolhe o que quer ver sem rolar a tela infinitamente
             aba_analise, aba_grafico = st.tabs(["🔍 Análise da Plataforma", "📊 Comparativo Geral de Risco"])
             
             with aba_analise:
                 st.write("")
-                # Seção 1: Resumo em Card Clean
                 st.subheader("📋 Resumo Direto do Termo")
                 st.markdown(f"""
                     <div class="card-resumo">
@@ -213,7 +235,6 @@ if opcao_plataforma != "Selecione...":
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # Seção 2: Red Flags em duas colunas organizadas
                 st.write("")
                 st.subheader("🚩 Pontos de Atenção Críticos")
                 col_tags, col_box = st.columns(2)
@@ -232,7 +253,6 @@ if opcao_plataforma != "Selecione...":
                         </div>
                     """, unsafe_allow_html=True)
                 
-                # Seção 4: Notícias integradas na aba principal de forma compacta
                 st.write("")
                 st.markdown("<hr style='border: 0; border-top: 1px solid #104f7e; opacity: 0.2;'>", unsafe_allow_html=True)
                 st.subheader("📰 Notícias em Tempo Real")
@@ -255,7 +275,7 @@ if opcao_plataforma != "Selecione...":
                             f1 = noticias[0].find('source').text if noticias[0].find('source') is not None else "Portal"
                             st.markdown(f"""
                                 <div class="card-noticia">
-                                    <h4 style='margin:0 0 8px 0;'><a href="{l1}" target="_blank" style="color: #104f7e; text-decoration: none;">{t1}</a></h4>
+                                    <h4 style='margin:0 0 8px 0; font-family: "Inter", sans-serif;'><a href="{l1}" target="_blank" style="color: #104f7e; text-decoration: none;">{t1}</a></h4>
                                     <span style="color: #c03131; font-weight: bold; font-size: 0.8rem;">Fonte: {f1}</span>
                                 </div>
                             """, unsafe_allow_html=True)
@@ -267,7 +287,7 @@ if opcao_plataforma != "Selecione...":
                                 f2 = noticias[1].find('source').text if noticias[1].find('source') is not None else "Portal"
                                 st.markdown(f"""
                                     <div class="card-noticia">
-                                        <h4 style='margin:0 0 8px 0;'><a href="{l2}" target="_blank" style="color: #104f7e; text-decoration: none;">{t2}</a></h4>
+                                        <h4 style='margin:0 0 8px 0; font-family: "Inter", sans-serif;'><a href="{l2}" target="_blank" style="color: #104f7e; text-decoration: none;">{t2}</a></h4>
                                         <span style="color: #c03131; font-weight: bold; font-size: 0.8rem;">Fonte: {f2}</span>
                                     </div>
                                 """, unsafe_allow_html=True)
@@ -276,7 +296,6 @@ if opcao_plataforma != "Selecione...":
 
             with aba_grafico:
                 st.write("")
-                # Seção 3: Gráfico isolado para dar impacto visual limpo
                 st.subheader("📊 Ranking Comparativo de Vulnerabilidade")
                 st.markdown("O gráfico ilustra o nível de exposição e risco dos seus dados em cada ecossistema digital:")
                 df_grafico = pd.DataFrame(dados_risco_global)
@@ -285,7 +304,6 @@ if opcao_plataforma != "Selecione...":
     else:
         st.error(f"Arquivo '{arquivo_alvo}' não encontrado.")
 else:
-    # Estado inicial com boas-vindas sofisticado e clean
     st.markdown("""
         <div style="background-color: #ffffff; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
             <h3 style="color: #104f7e; margin-top:0;">🌹 Boas-vindas ao Analisador</h3>
