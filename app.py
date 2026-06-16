@@ -42,7 +42,10 @@ st.markdown("""
 try:
     # A nova biblioteca lê automaticamente a variável de ambiente GEMINI_API_KEY
     client = genai.Client(GEMINI_API_KEY)
-
+except Exception as e:
+    st.error("Erro ao inicializar a API do Gemini. Certifique-se de que a GEMINI_API_KEY está configurada.")
+    client = None
+    
 # Mapeamento das plataformas para os respectivos nomes de arquivos salvos na pasta do projeto
 MAPA_PLATAFORMAS = {
     "Facebook": "Facebook.txt",
