@@ -162,24 +162,67 @@ if opcao_plataforma != "Selecione...":
             st.bar_chart(data=df_grafico, x='Plataformas', y='Nível de Risco (0-100)', color='#104f7e')
             st.divider()
             
-            # 4. NOTÍCIAS (Dinâmico/Links Estruturados)
+            # --- 4. NOTÍCIAS RELACIONADAS (DINÂMICAS E REAIS) ---
             st.header("📰 Notícias Relacionadas")
             st.markdown(f"Pesquisas recentes e atualizações jornalísticas envolvendo a privacidade da **{opcao_plataforma}**:")
             
-            col_n1, col_n2 = st.columns(2)
-            with col_n1:
-                st.markdown(f"### [{opcao_plataforma} e investigações de tratamento de dados](https://g1.globo.com)")
-                st.caption("Fonte: Portal G1 | Atualizado Recentemente")
-                st.write("Acompanhe notícias sobre as últimas auditorias da ANPD (Autoridade Nacional de Proteção de Dados) e processos regulatórios aplicados a empresas de tecnologia.")
-            with col_n2:
-                st.markdown(f"### [Mudanças globais nas políticas da controladora do {opcao_plataforma}](https://www.bbc.com/portuguese)")
-                st.caption("Fonte: BBC Brasil | Atualizado Recentemente")
-                st.write("Análise internacional sobre como novas diretrizes de inteligência artificial aplicadas à plataforma impactam os direitos de privacidade no Brasil.")
+            # Criando uma busca automatizada no Google News via RSS (Linguagem em Português e notícias do Brasil)
+            import urllib.parse
+            import xml.etree.ElementTree as ET
+            import requests
+
+            # Formatamos o termo de busca (Ex: "WhatsApp privacidade data-protection")
+            termo_busca = f"{opcao_plataforma} privacidade"
+            termo_codificado = urllib.parse.quote(termo_busca)
+            url_feed = f"https://news.google.com/rss/search?q={termo_codificado}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+
+            try:
+                # Buscamos as notícias mais recentes no servidor do Google
+                resposta = requests.get(url_feed, timeout=5)
+                root = ET.fromstring(resposta.content)
                 
-    else:
-        st.error(f"Arquivo '{arquivo_alvo}' não encontrado no repositório. Verifique o upload no GitHub.")
-else:
-    st.info("Por favor, selecione uma plataforma para iniciar a análise em tempo real.")
+                # Pegamos as duas primeiras notícias encontradas
+                noticias = root.findall('.//item')[:2]
+                
+                if noticias:
+                    col_n1, col_n2 = st.columns(2)
+                    
+                    # Notícia 1
+                    with col_n1:
+                        titulo1 = noticias[0].find('title').text
+                        link1 = noticias[0].find('link').text
+                        fonte1 = noticias[0].find('source').text if noticias[0].find('source') is not None else "Portal de Notícias"
+                        data1 = noticias[0].find('pubDate').text[:16] # Pega o dia e horário abreviados
+                        
+                        st.markdown(f"### [{titulo1}]({link1})")
+                        st.caption(f"Fonte: {fonte1} | Publicado em: {data1}")
+                        st.write(f"Clique no título acima para ler a reportagem completa e direto na fonte sobre os últimos acontecimentos envolvendo o {opcao_plataforma}.")
+                    
+                    # Notícia 2
+                    with col_n2:
+                        if len(noticias) > 1:
+                            titulo2 = noticias[1].find('title').text
+                            link2 = noticias[1].find('link').text
+                            fonte2 = noticias[1].find('source').text if noticias[1].find('source') is not None else "Portal de Notícias"
+                            data2 = noticias[1].find('pubDate').text[:16]
+                            
+                            st.markdown(f"### [{titulo2}]({link2})")
+                            st.caption(f"Fonte: {fonte2} | Publicado em: {data2}")
+                            st.write(f"Acompanhe esta segunda cobertura jornalística clicando no link para entender o cenário regulatório e o impacto nos usuários.")
+                else:
+                    st.warning("Não encontramos notícias recentes específicas para esta plataforma no momento.")
+            
+            except Exception as e:
+                # Caso o Google Bloqueie ou a internet caia, o site não quebra e mostra o layout antigo seguro
+                col_n1, col_n2 = st.columns(2)
+                with col_n1:
+                    st.markdown(f"### [{opcao_plataforma} e investigações de tratamento de dados](https://g1.globo.com/tecnologia/)")
+                    st.caption("Fonte: Portal G1 Tecnologia")
+                    st.write("Acompanhe notícias sobre as últimas auditorias da ANPD (Autoridade Nacional de Proteção de Dados) e processos regulatórios aplicados a empresas de tecnologia.")
+                with col_n2:
+                    st.markdown(f"### [Mudanças globais nas políticas da controladora do {opcao_plataforma}](https://www.bbc.com/portuguese/topics/c40g969r280t)")
+                    st.caption("Fonte: BBC Brasil Tecnologia")
+                    st.write("Análise internacional sobre como novas diretrizes de inteligência artificial aplicadas à plataforma impactam os direitos de privacidade no Brasil.")
 
 # --- RODAPÉ ---
 st.markdown("""
