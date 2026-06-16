@@ -4,49 +4,122 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 import os
+import urllib.parse
+import xml.etree.ElementTree as ET
+import requests
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Analisador de Termos de Privacidade",
+    page_title="Analisador de Privacidade",
     page_icon="🌹",
     layout="wide"
 )
 
-# --- PALETA DE CORES (A Bela e a Fera) ---
+# --- PALETA DE CORES "A BELA E A FERA" (CSS CUSTOMIZADO) ---
+# Explorando o Azul Fera (#104f7e), Dourado (#f2c557), Creme (#f0dbb6), Vermelho Rosa (#c03131) e Fundo (#ebf2f7)
 st.markdown("""
     <style>
-        .stApp { background-color: #ebf2f7; color: #221e23; }
-        h1, h2, h3 { color: #104f7e !important; }
-        .red-flag-box {
+        /* Fundo do site e fonte */
+        .stApp {
+            background-color: #ebf2f7;
+            color: #221e23;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        
+        /* Customização dos Títulos */
+        h1 {
+            color: #104f7e !important;
+            font-weight: 800 !important;
+            margin-bottom: 5px !important;
+        }
+        h2, h3 {
+            color: #104f7e !important;
+            font-weight: 700 !important;
+        }
+        
+        /* Card de Resumo Elegante */
+        .card-resumo {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            border-top: 5px solid #104f7e;
+            box-shadow: 0 4px 12px rgba(16, 79, 126, 0.08);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        /* Alerta Vermelho Rosa (Red Flags) */
+        .card-atencao {
             background-color: #f0dbb6;
-            border-left: 5px solid #c03131;
-            padding: 15px;
-            border-radius: 5px;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 6px solid #c03131;
+            box-shadow: 0 4px 10px rgba(192, 49, 49, 0.1);
             margin-bottom: 20px;
         }
-        .atencao-texto { color: #c03131; font-weight: bold; font-size: 1.1rem; }
-        .tag-risco {
-            background-color: #c03131; color: white; padding: 6px 12px; 
-            border-radius: 4px; margin: 3px; display: inline-block; font-weight: bold;
+        .atencao-titulo {
+            color: #c03131;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
         }
+        
+        /* Nuvem de Tags Coloridas e Vivas */
+        .tag-risco {
+            background-color: #c03131;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 20px;
+            margin: 5px;
+            display: inline-block;
+            font-weight: bold;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(192, 49, 49, 0.2);
+        }
+        
+        /* Cards de Notícias modernos */
+        .card-noticia {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            border-bottom: 4px solid #f2c557; /* Detalhe em Dourado */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+            height: 100%;
+        }
+        
+        /* Customização Estética das Abas (Tabs) */
+        .stTabs [data-baseweb="tab"] {
+            font-weight: bold !important;
+            color: #104f7e !important;
+            font-size: 1.05rem !important;
+        }
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {
+            background-color: #104f7e !important;
+            color: #ffffff !important;
+            border-radius: 4px 4px 0px 0px;
+            padding: 10px 20px !important;
+        }
+        
+        /* Rodapé Discreto */
         .footer {
-            font-size: 0.75rem; color: #555555; text-align: center;
-            margin-top: 50px; border-top: 1px solid #104f7e; padding-top: 10px;
+            font-size: 0.75rem;
+            color: #555555;
+            text-align: center;
+            margin-top: 60px;
+            border-top: 1px solid #104f7e;
+            padding-top: 15px;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONFIGURAÇÃO DA API GEMINI ---
-# O Streamlit gerencia segredos de forma segura. No GitHub/Streamlit Cloud,
-# você configurará a variável "GEMINI_API_KEY" nos Secrets do painel.
+# --- INICIALIZAÇÃO DA API GEMINI ---
 try:
-    # A nova biblioteca lê automaticamente a variável de ambiente GEMINI_API_KEY
     client = genai.Client()
 except Exception as e:
-    st.error("Erro ao inicializar a API do Gemini. Certifique-se de que a GEMINI_API_KEY está configurada.")
+    st.error("Erro ao inicializar a API do Gemini. Verifique a chave GEMINI_API_KEY nos Secrets.")
     client = None
-    
-# Mapeamento das plataformas para os respectivos nomes de arquivos salvos na pasta do projeto
+
+# Mapeamento de arquivos
 MAPA_PLATAFORMAS = {
     "Facebook": "Facebook.txt",
     "Instagram": "Instagram.txt",
@@ -57,39 +130,25 @@ MAPA_PLATAFORMAS = {
     "YouTube": "Youtube.txt"
 }
 
-# --- DEFINIÇÃO DO FORMATO DE RESPOSTA (Pydantic) ---
-# Força o Gemini a responder exatamente com os campos necessários para preencher o layout
 class AnalisePrivacidade(BaseModel):
     resumo_claro: str = Field(description="Um resumo em linguagem muito clara, simples e direta sobre o termo de privacidade.")
     red_flags: list[str] = Field(description="Lista de 5 a 8 palavras ou termos curtos de risco encontrados (ex: Rastreamento, Terceiros).")
     palavra_mais_critica: str = Field(description="A palavra ou conceito que representa o maior risco isolado ao usuário.")
     pontuacao_risco: int = Field(description="Uma nota inteira de 0 a 100 baseada na severidade das cláusulas de privacidade avaliadas.")
 
-# Função para carregar o arquivo txt localmente
 def carregar_termo(nome_arquivo):
     if os.path.exists(nome_arquivo):
         with open(nome_arquivo, "r", encoding="utf-8") as f:
             return f.read()
     return None
 
-# Função cacheada para economizar requisições à API e acelerar a navegação do usuário
-@st.cache_data(show_spinner="Gemini analisando o termo juridico... Por favor, aguarde.")
+@st.cache_data(show_spinner="Analisando cláusulas contratuais com Inteligência Artificial...")
 def analisar_termo_com_gemini(texto_termo, nome_plataforma):
-    if not client:
-        return None
-        
-    prompt = f"""
-    Você é um especialista em direito digital e privacidade de dados. 
-    Analise o termo de privacidade completo da plataforma {nome_plataforma} fornecido abaixo.
-    Extraia as informações necessárias respeitando estritamente o esquema JSON solicitado.
-    
-    Termo de Privacidade:
-    {texto_termo}
-    """
-    
+    if not client: return None
+    prompt = f"Você é um especialista em direito digital. Analise o termo da plataforma {nome_plataforma} fornecido: {texto_termo}"
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash', # Rápido, econômico e com contexto massivo
+            model='gemini-2.5-flash',
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -97,136 +156,149 @@ def analisar_termo_com_gemini(texto_termo, nome_plataforma):
                 temperature=0.2
             ),
         )
-        # O SDK retorna a string JSON validada no formato do Pydantic em .text
         import json
         return json.loads(response.text)
     except Exception as e:
-        st.error(f"Erro na chamada da API: {e}")
+        st.error(f"Erro na API: {e}")
         return None
 
-# --- MAPA FIXO DE COMPARAÇÃO DE RISCOS (Para a Seção 3) ---
-# Como o gráfico precisa listar TODAS as plataformas simultaneamente, o ideal é ter uma base centralizada.
-# Você pode preencher com valores pré-avaliados ou mockados enquanto consolida o app.
+# Dados globais fixos para o gráfico
 dados_risco_global = {
     'Plataformas': ["Facebook", "Instagram", "Snapchat", "TikTok", "Twitter (X)", "WhatsApp", "YouTube"],
     'Nível de Risco (0-100)': [88, 85, 65, 90, 75, 55, 70]
 }
 
-# --- INTERFACE DO USUÁRIO ---
-st.title("🌹 Analisador de Termos de Privacidade das Plataformas Digitais")
-st.markdown("Entenda de forma clara o que as grandes plataformas fazem com os seus dados usando Inteligência Artificial.")
-st.divider()
+# --- CABEÇALHO COMPACTO E COLORIDO ---
+col_logo, col_titulo = st.columns([1, 5])
 
-# Menu de seleção
-opcao_plataforma = st.selectbox("Escolha uma plataforma para análise detalhada:", ["Selecione..."] + list(MAPA_PLATAFORMAS.keys()))
+with col_logo:
+    # Tenta carregar a sua logo. se não achar, coloca o emoji clássico da rosa
+    if os.path.exists("logo.png"):
+        st.image("logo.png", use_container_width=True)
+    else:
+        st.markdown("<h1 style='font-size: 4rem; text-align: center; margin:0;'>🌹</h1>", unsafe_allow_html=True)
+
+with col_titulo:
+    st.markdown("<h1>Analisador de Termos de Privacidade</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #104f7e; font-size: 1.1rem; margin:0;'>Desmistificando a segurança digital e os seus direitos nas plataformas.</p>", unsafe_allow_html=True)
+
+st.write("") # Espaçador técnico
+
+# --- MENU DE SELEÇÃO E FILTRO ---
+col_select, _ = st.columns([2, 2])
+with col_select:
+    opcao_plataforma = st.selectbox("🎯 Escolha uma plataforma digital para auditar:", ["Selecione..."] + list(MAPA_PLATAFORMAS.keys()))
+
+st.divider()
 
 if opcao_plataforma != "Selecione...":
     arquivo_alvo = MAPA_PLATAFORMAS[opcao_plataforma]
     texto_contrato = carregar_termo(arquivo_alvo)
     
     if texto_contrato:
-        # Executa a análise inteligente
         analise = analisar_termo_com_gemini(texto_contrato, opcao_plataforma)
         
         if analise:
-            # 1. RESUMO
-            st.header("📋 Resumo do Termo de Privacidade")
-            st.write(analise['resumo_claro'])
-            st.divider()
+            # --- COMPACTAÇÃO POR ABAS (TABS) ---
+            # O site fica limpo e o usuário escolhe o que quer ver sem rolar a tela infinitamente
+            aba_analise, aba_grafico = st.tabs(["🔍 Análise da Plataforma", "📊 Comparativo Geral de Risco"])
             
-            # 2. RED FLAGS
-            st.header("🚩 Principais Pontos de Atenção - RED FLAGS")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.subheader("Nuvem de Termos de Risco")
-                tags_html = "".join([f"<span class='tag-risco'>{tag}</span>" for tag in analise['red_flags']])
-                st.markdown(tags_html, unsafe_allow_html=True)
-                
-            with col2:
-                st.subheader("Destaque Importante")
+            with aba_analise:
+                st.write("")
+                # Seção 1: Resumo em Card Clean
+                st.subheader("📋 Resumo Direto do Termo")
                 st.markdown(f"""
-                    <div class="red-flag-box">
-                        <p class="atencao-texto">⚠️ ATENÇÃO:</p>
-                        <p>A palavra que mais aparece (ou possui maior criticidade) nesse termo é: 
-                        <span style="color: #c03131; font-weight: bold; font-size: 1.2rem;">{analise['palavra_mais_critica']}</span>.</p>
+                    <div class="card-resumo">
+                        {analise['resumo_claro']}
                     </div>
                 """, unsafe_allow_html=True)
-            st.divider()
-            
-            # 3. GRÁFICO COMPARATIVO
-            st.header("📊 Classificação do Nível de Risco")
-            st.markdown("Veja onde a plataforma selecionada se posiciona no comparativo geral de risco à segurança digital:")
-            
-            df_grafico = pd.DataFrame(dados_risco_global)
-            st.bar_chart(data=df_grafico, x='Plataformas', y='Nível de Risco (0-100)', color='#104f7e')
-            st.divider()
-            
-            # --- 4. NOTÍCIAS RELACIONADAS (DINÂMICAS E REAIS) ---
-            st.header("📰 Notícias Relacionadas")
-            st.markdown(f"Pesquisas recentes e atualizações jornalísticas envolvendo a privacidade da **{opcao_plataforma}**:")
-            
-            # Criando uma busca automatizada no Google News via RSS (Linguagem em Português e notícias do Brasil)
-            import urllib.parse
-            import xml.etree.ElementTree as ET
-            import requests
-
-            # Formatamos o termo de busca (Ex: "WhatsApp privacidade data-protection")
-            termo_busca = f"{opcao_plataforma} privacidade"
-            termo_codificado = urllib.parse.quote(termo_busca)
-            url_feed = f"https://news.google.com/rss/search?q={termo_codificado}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
-
-            try:
-                # Buscamos as notícias mais recentes no servidor do Google
-                resposta = requests.get(url_feed, timeout=5)
-                root = ET.fromstring(resposta.content)
                 
-                # Pegamos as duas primeiras notícias encontradas
-                noticias = root.findall('.//item')[:2]
+                # Seção 2: Red Flags em duas colunas organizadas
+                st.write("")
+                st.subheader("🚩 Pontos de Atenção Críticos")
+                col_tags, col_box = st.columns(2)
                 
-                if noticias:
-                    col_n1, col_n2 = st.columns(2)
+                with col_tags:
+                    st.markdown("<p style='font-weight: bold; color: #221e23;'>Termos de maior recorrência e risco:</p>", unsafe_allow_html=True)
+                    tags_html = "".join([f"<span class='tag-risco'>{tag}</span>" for tag in analise['red_flags']])
+                    st.markdown(tags_html, unsafe_allow_html=True)
                     
-                    # Notícia 1
-                    with col_n1:
-                        titulo1 = noticias[0].find('title').text
-                        link1 = noticias[0].find('link').text
-                        fonte1 = noticias[0].find('source').text if noticias[0].find('source') is not None else "Portal de Notícias"
-                        data1 = noticias[0].find('pubDate').text[:16] # Pega o dia e horário abreviados
+                with col_box:
+                    st.markdown(f"""
+                        <div class="card-atencao">
+                            <div class="atencao-titulo">⚠️ ATENÇÃO:</div>
+                            A palavra ou conceito que mais se destaca de forma crítica neste termo é: 
+                            <br><span style="color: #c03131; font-weight: 900; font-size: 1.3rem;">{analise['palavra_mais_critica']}</span>.
+                        </div>
+                    """, unsafe_allow_html=True)
+                
+                # Seção 4: Notícias integradas na aba principal de forma compacta
+                st.write("")
+                st.markdown("<hr style='border: 0; border-top: 1px solid #104f7e; opacity: 0.2;'>", unsafe_allow_html=True)
+                st.subheader("📰 Notícias em Tempo Real")
+                
+                termo_busca = f"{opcao_plataforma} privacidade dados"
+                termo_codificado = urllib.parse.quote(termo_busca)
+                url_feed = f"https://news.google.com/rss/search?q={termo_codificado}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+                
+                try:
+                    resposta = requests.get(url_feed, timeout=5)
+                    root = ET.fromstring(resposta.content)
+                    noticias = root.findall('.//item')[:2]
+                    
+                    if noticias:
+                        col_n1, col_n2 = st.columns(2)
                         
-                        st.markdown(f"### [{titulo1}]({link1})")
-                        st.caption(f"Fonte: {fonte1} | Publicado em: {data1}")
-                        st.write(f"Clique no título acima para ler a reportagem completa e direto na fonte sobre os últimos acontecimentos envolvendo o {opcao_plataforma}.")
-                    
-                    # Notícia 2
-                    with col_n2:
-                        if len(noticias) > 1:
-                            titulo2 = noticias[1].find('title').text
-                            link2 = noticias[1].find('link').text
-                            fonte2 = noticias[1].find('source').text if noticias[1].find('source') is not None else "Portal de Notícias"
-                            data2 = noticias[1].find('pubDate').text[:16]
+                        with col_n1:
+                            t1 = noticias[0].find('title').text
+                            l1 = noticias[0].find('link').text
+                            f1 = noticias[0].find('source').text if noticias[0].find('source') is not None else "Portal"
+                            st.markdown(f"""
+                                <div class="card-noticia">
+                                    <h4 style='margin:0 0 8px 0;'><a href="{l1}" target="_blank" style="color: #104f7e; text-decoration: none;">{t1}</a></h4>
+                                    <span style="color: #c03131; font-weight: bold; font-size: 0.8rem;">Fonte: {f1}</span>
+                                </div>
+                            """, unsafe_allow_html=True)
                             
-                            st.markdown(f"### [{titulo2}]({link2})")
-                            st.caption(f"Fonte: {fonte2} | Publicado em: {data2}")
-                            st.write(f"Acompanhe esta segunda cobertura jornalística clicando no link para entender o cenário regulatório e o impacto nos usuários.")
-                else:
-                    st.warning("Não encontramos notícias recentes específicas para esta plataforma no momento.")
-            
-            except Exception as e:
-                # Caso o Google Bloqueie ou a internet caia, o site não quebra e mostra o layout antigo seguro
-                col_n1, col_n2 = st.columns(2)
-                with col_n1:
-                    st.markdown(f"### [{opcao_plataforma} e investigações de tratamento de dados](https://g1.globo.com/tecnologia/)")
-                    st.caption("Fonte: Portal G1 Tecnologia")
-                    st.write("Acompanhe notícias sobre as últimas auditorias da ANPD (Autoridade Nacional de Proteção de Dados) e processos regulatórios aplicados a empresas de tecnologia.")
-                with col_n2:
-                    st.markdown(f"### [Mudanças globais nas políticas da controladora do {opcao_plataforma}](https://www.bbc.com/portuguese/topics/c40g969r280t)")
-                    st.caption("Fonte: BBC Brasil Tecnologia")
-                    st.write("Análise internacional sobre como novas diretrizes de inteligência artificial aplicadas à plataforma impactam os direitos de privacidade no Brasil.")
+                        with col_n2:
+                            if len(noticias) > 1:
+                                t2 = noticias[1].find('title').text
+                                l2 = noticias[1].find('link').text
+                                f2 = noticias[1].find('source').text if noticias[1].find('source') is not None else "Portal"
+                                st.markdown(f"""
+                                    <div class="card-noticia">
+                                        <h4 style='margin:0 0 8px 0;'><a href="{l2}" target="_blank" style="color: #104f7e; text-decoration: none;">{t2}</a></h4>
+                                        <span style="color: #c03131; font-weight: bold; font-size: 0.8rem;">Fonte: {f2}</span>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                except:
+                    st.write("Consulte os portais de tecnologia para ver as últimas novidades.")
 
-# --- RODAPÉ ---
+            with aba_grafico:
+                st.write("")
+                # Seção 3: Gráfico isolado para dar impacto visual limpo
+                st.subheader("📊 Ranking Comparativo de Vulnerabilidade")
+                st.markdown("O gráfico ilustra o nível de exposição e risco dos seus dados em cada ecossistema digital:")
+                df_grafico = pd.DataFrame(dados_risco_global)
+                st.bar_chart(data=df_grafico, x='Plataformas', y='Nível de Risco (0-100)', color='#104f7e')
+                
+    else:
+        st.error(f"Arquivo '{arquivo_alvo}' não encontrado.")
+else:
+    # Estado inicial com boas-vindas sofisticado e clean
+    st.markdown("""
+        <div style="background-color: #ffffff; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+            <h3 style="color: #104f7e; margin-top:0;">🌹 Boas-vindas ao Analisador</h3>
+            <p style="color: #555555; max-width: 600px; margin: 0 auto;">
+                Contratos de termos de uso são longos e complexos. Selecione uma das 7 plataformas no menu acima 
+                para decodificar as cláusulas ocultas usando nossa auditoria inteligente baseada no modelo Gemini.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+# --- RODAPÉ ACADÊMICO ---
 st.markdown("""
     <div class="footer">
-        Aluna FGV-ECMI: Keidy Alves Pizzetti Amaro | Orientador: Prof. Josir Gomes
+        Aluna FGV-ECMI: Keidy Alves Pizzetti Amaro &nbsp;|&nbsp; Orientador: Prof. Josir Gomes
     </div>
 """, unsafe_allow_html=True)
