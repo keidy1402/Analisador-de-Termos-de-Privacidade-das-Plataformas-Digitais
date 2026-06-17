@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
@@ -9,22 +10,15 @@ import xml.etree.ElementTree as ET
 import requests
 import json
 import random
+import html
 from io import BytesIO
 
-# --- MOTOR GRÁFICO RESILIENTE ---
-try:
-    import plotly.express as px
-    PLOTLY_DISPONIVEL = True
-except ImportError:
-    PLOTLY_DISPONIVEL = False
-
-# --- MOTOR DE PDF REVISADO ---
+# --- MOTOR DE PDF ROBUSTO ---
 try:
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib import colors
-    import html
     PDF_DISPONIVEL = True
 except ImportError:
     PDF_DISPONIVEL = False
@@ -36,120 +30,129 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- ESTILO CSS CUSTOMIZADO (ESTÉTICA A BELA E A FERA) ---
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
         
-        /* Fundo estilo pergaminho real e fontes temáticas */
-        .stApp { 
-            background-color: #FAF5EC; 
-            color: #2C1E21; 
-            font-family: 'Lora', serif; 
+        /* Configurações Gerais */
+        .stApp { background-color: #FAF5EC; color: #2C1E21; font-family: 'Lora', serif; }
+        h1, h2, h3, h4 { font-family: 'Cinzel', serif !important; color: #162E5C !important; font-weight: 600; }
+        
+        .gold-divider { 
+            height: 2px; 
+            background: linear-gradient(90deg, transparent, #D4AF37, transparent); 
+            margin: 30px 0; 
         }
         
-        /* Títulos com a fonte Cinzel (estilo castelo) */
-        h1, h2, h3, h4, h5, h6 { 
-            font-family: 'Cinzel', serif !important; 
-            color: #162E5C !important; /* Azul Imperial */
-            font-weight: 600;
-        }
-        
-        /* Divisores dourados elegantes */
-        .gold-divider {
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #D4AF37, transparent); /* Ouro Real */
-            margin: 25px 0;
-        }
-        
-        /* Caixa em estilo pergaminho para blocos de texto */
+        /* Cartão de Pergaminho (Resumo) */
         .parchment-card {
-            background-color: #FFFFFF;
-            border: 1px solid #E6D9C5;
+            background-color: #FFFFFF; 
+            border: 1px solid #E6D9C5; 
             border-top: 4px solid #D4AF37;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.04);
+            margin-bottom: 20px; 
+            height: 260px; /* Altura fixa idêntica para alinhamento absoluto */
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+            overflow-y: auto;
         }
 
-        /* Nuvem de Palavras via CSS */
-        .word-cloud-container {
-            padding: 20px;
-            text-align: center;
-            line-height: 2.5;
-            background: #FFFDF9;
-            border-radius: 10px;
-            border: 1px dashed #D4AF37;
+        /* Nova Nuvem de Palavras Estilo Medalhões de Época */
+        .word-cloud-container { 
+            padding: 25px; 
+            text-align: center; 
+            background: #FFFDF9; 
+            border: 1px dashed #D4AF37; 
+            border-radius: 12px;
+            box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.05);
+        }
+
+        .vintage-tag {
+            font-family: 'Cinzel', serif;
+            color: #991B1B;
+            border: 1px solid #D4AF37;
+            background-color: rgba(212, 175, 55, 0.06);
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin: 6px;
+            display: inline-block;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+        }
+        
+        .vintage-tag:hover {
+            transform: scale(1.06) translateY(-2px);
+            background-color: rgba(153, 27, 27, 0.08);
+            border-color: #991B1B;
+            box-shadow: 0 4px 8px rgba(153, 27, 27, 0.12);
         }
 
         /* Quadro de Atenção Vermelho Carmesim */
         .attention-box {
-            background-color: #FFF5F5;
-            border: 2px solid #991B1B;
-            padding: 20px;
+            background-color: #FFF5F5; 
+            border: 2px solid #991B1B; 
+            padding: 25px; 
             border-radius: 8px;
-            text-align: center;
-            margin-top: 20px;
+            text-align: center; 
+            margin-top: 20px; 
             position: relative;
+            box-shadow: 0 4px 12px rgba(153, 27, 27, 0.05);
         }
-
         .attention-label {
-            position: absolute;
-            top: -12px;
-            left: 50%;
+            position: absolute; 
+            top: -12px; 
+            left: 50%; 
             transform: translateX(-50%);
-            background: #991B1B;
-            color: white;
-            padding: 2px 15px;
-            font-family: 'Cinzel', serif;
-            font-size: 0.8rem;
+            background: #991B1B; 
+            color: white; 
+            padding: 2px 18px; 
+            font-family: 'Cinzel', serif; 
+            font-size: 0.85rem; 
             border-radius: 4px;
             font-weight: bold;
             letter-spacing: 1px;
         }
 
-        /* Container de Score Temático */
+        /* Container de Risco Geral Detectado */
         .score-container {
-            text-align: center;
+            text-align: center; 
             background: linear-gradient(135deg, #162E5C 0%, #0B1D3A 100%);
             color: #FAF5EC; 
             padding: 30px; 
-            border-radius: 12px;
+            border-radius: 12px; 
             border: 2px solid #D4AF37;
+            box-shadow: 0 8px 25px rgba(22, 46, 92, 0.2); 
+            height: 260px; /* Altura fixa idêntica para alinhamento absoluto */
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
         }
+        .score-number { font-family: 'Cinzel', serif; font-size: 4.8rem; color: #F5D04C; line-height: 1; font-weight: 700; }
 
-        .score-number { 
-            font-family: 'Cinzel', serif; 
-            font-size: 4rem; 
-            color: #F5D04C; 
-            line-height: 1; 
-        }
-
-        /* Rodapé de época */
-        .footer {
-            font-family: 'Cinzel', serif; 
-            font-size: 0.8rem; 
-            text-align: center;
-            margin-top: 50px; 
-            border-top: 1px dashed #D4AF37; 
-            padding-top: 20px;
-            color: #5C4B40;
-        }
+        /* Rodapé de Época */
+        .footer { font-family: 'Cinzel', serif; font-size: 0.8rem; text-align: center; margin-top: 80px; border-top: 1px dashed #D4AF37; padding-top: 25px; color: #6B5B52; }
     </style>
 """, unsafe_allow_html=True)
 
+# --- MODELOS DE DADOS ---
 class DicaSeguranca(BaseModel):
-    titulo: str = Field(description="Título curto da dica de proteção prática.")
-    passos: list[str] = Field(description="Lista com 3 a 5 passos sequenciais extremamente simples de executar.")
+    titulo: str
+    passos: list[str]
 
 class AnalisePrivacidade(BaseModel):
-    resumo_claro: str = Field(description="Resumo do termo em linguagem clara.")
-    red_flags: list[str] = Field(description="Lista de 5 a 8 palavras ou termos curtos de risco.")
-    palavra_mais_critica: str = Field(description="Conceito que representa o maior risco isolado.")
-    pontuacao_risco: int = Field(description="Nota de 0 a 100.")
-    dicas_protecao: list[DicaSeguranca] = Field(description="Lista de 3 dicas práticas passo a passo.")
+    resumo_claro: str
+    red_flags: list[str]
+    palavra_mais_critica: str
+    pontuacao_risco: int
+    dicas_protecao: list[DicaSeguranca]
 
-# --- BANCO DE CONTINGÊNCIA (IMUNE A QUEDAS E ERROS 503 DO GEMINI) ---
+# --- BANCO DE CONTINGÊNCIA (FALLBACK SEGURO) ---
 ACERVO_CONTINGENCIA = {
     "Facebook": {
         "resumo_claro": "O Facebook monitora intensamente sua atividade fora do aplicativo, coletando dados de navegação, histórico de compras e interesses para traçar perfis psicológicos profundos voltados a anúncios direcionados.",
@@ -230,12 +233,9 @@ ACERVO_CONTINGENCIA = {
     }
 }
 
+# --- FUNÇÕES DE LÓGICA ---
 @st.cache_data
 def analisar_ia_com_contingencia(texto, plataforma):
-    """
-    Tenta analisar via API do Gemini. Caso o servidor Google esteja fora do ar 
-    ou retorne o erro de alta demanda (503), busca o relatório ideal de contingência.
-    """
     try:
         client = genai.Client()
         resp = client.models.generate_content(
@@ -247,28 +247,19 @@ def analisar_ia_com_contingencia(texto, plataforma):
                 temperature=0.2
             )
         )
-        return json.loads(resp.text), False  # Retorna a resposta e avisa que NÃO é contingência
+        return json.loads(resp.text), False
     except Exception:
-        # Se falhar, busca instantaneamente o banco local para o usuário não ficar sem serviço
         return ACERVO_CONTINGENCIA.get(plataforma), True
 
 def limpar_texto_pdf(texto):
-    """
-    Evita que o ReportLab quebre se houver caracteres reservados do XML
-    (como '&', '<' ou '>') contidos nos termos analisados.
-    """
     if not PDF_DISPONIVEL or not texto:
         return ""
     texto_escapado = html.escape(str(texto))
-    # Restaura formatações básicas intencionais para o PDF
     texto_escapado = texto_escapado.replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
     texto_escapado = texto_escapado.replace("&lt;i&gt;", "<i>").replace("&lt;/i&gt;", "</i>")
     return texto_escapado
 
 def gerar_pdf_corrigido(plataforma, analise):
-    """
-    Gera um PDF elegante baseado no tema, perfeitamente compatível com o Streamlit Cloud.
-    """
     if not PDF_DISPONIVEL:
         return None
         
@@ -276,7 +267,6 @@ def gerar_pdf_corrigido(plataforma, analise):
     doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
     styles = getSampleStyleSheet()
     
-    # Estilos clássicos e seguros
     title_style = ParagraphStyle('T', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=18, textColor=colors.HexColor('#162E5C'), alignment=1)
     h2_style = ParagraphStyle('H2', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=12, textColor=colors.HexColor('#162E5C'), spaceBefore=15, spaceAfter=8)
     body_style = ParagraphStyle('B', parent=styles['Normal'], fontName='Helvetica', fontSize=10, textColor=colors.HexColor('#2C1E21'), leading=14, spaceAfter=10)
@@ -291,14 +281,12 @@ def gerar_pdf_corrigido(plataforma, analise):
         Paragraph("<b>PASSO A PASSO DE PROTEÇÃO (DIDÁTICO):</b>", h2_style)
     ]
     
-    # Adicionando as dicas passo a passo no PDF
     for i, dica in enumerate(analise['dicas_protecao'], 1):
         story.append(Paragraph(f"<b>{i}. {limpar_texto_pdf(dica['titulo'])}</b>", body_style))
         for j, p in enumerate(dica['passos'], 1):
             story.append(Paragraph(f"<b>Passo {j}:</b> {limpar_texto_pdf(p)}", step_style))
         story.append(Spacer(1, 5))
         
-    # Rodapé da página
     story.append(Spacer(1, 20))
     story.append(Paragraph("<font color='#6B5B52'>FGV-ECMI | Aluna: Keidy Alves Pizzetti Amaro | Prof. Josir Gomes</font>", ParagraphStyle('F', parent=styles['Normal'], alignment=1, fontSize=8)))
     
@@ -326,29 +314,28 @@ with col_s2:
     opcao = st.selectbox("Selecione a plataforma para abrir o Relatório:", ["Selecione..."] + list(ACERVO_CONTINGENCIA.keys()))
 
 if opcao != "Selecione...":
-    # Carregando texto e consultando a IA resiliente
     analise, fallback = analisar_ia_com_contingencia("Contrato fictício ou real para análise...", opcao)
     
-    # Se o Gemini estava congestionado (Erro 503), exibe aviso temático amigável
     if fallback:
         st.info("🔮 *O Espelho da Verdade está sob uma névoa de alta demanda neste momento. Para sua segurança imediata, revelamos o Laudo Sagrado de nossa biblioteca interna de contingência.*")
 
     if analise:
+        # ALINHAMENTO SUPERIOR SIMÉTRICO: Relatório Geral e Risco Detectado com Altura Coesa
         c1, c2 = st.columns([2, 1])
         with c1:
             st.markdown(f"""
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <img src="{MAPA_ICONES[opcao]}" width="60">
-                    <h3>Relatório Real de {opcao}</h3>
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                    <img src="{MAPA_ICONES[opcao]}" width="55" alt="{opcao}">
+                    <h3 style="margin: 0 !important;">Relatório Real de {opcao}</h3>
                 </div>
             """, unsafe_allow_html=True)
-            st.markdown(f'<div class="parchment-card">{analise["resumo_claro"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="parchment-card"><p style="font-size:1.05rem; line-height:1.6; margin:0;">{analise["resumo_claro"]}</p></div>', unsafe_allow_html=True)
         with c2:
             st.markdown(f"""
+                <div style="margin-bottom: 10px; height: 35px;"></div>
                 <div class="score-container">
+                    <div style="font-family: 'Cinzel', serif; font-size: 1rem; margin-bottom: 5px;">Risco Geral Detectado</div>
                     <div class="score-number">{analise["pontuacao_risco"]}%</div>
-                    <div style="font-family: 'Cinzel', serif; margin-top: 8px;">Risco Geral Detectado</div>
-                <div>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -357,17 +344,15 @@ if opcao != "Selecione...":
         # --- SINAIS DE ALERTA & ESCUDO DE DEFESA ---
         f1, f2 = st.columns(2)
         with f1:
-            st.subheader("🚩Sinais de alerta - RED FLAGS:")
+            st.subheader("🚩 Sinais de alerta - RED FLAGS:")
             
-            # Nuvem de Palavras Dinâmica gerada via CSS
+            # Nuvem de Palavras Premium: Medalhões individuais com sutil variação de tamanho e opacidade
             tags_html = ""
             for tag in analise['red_flags']:
-                size = random.uniform(1.2, 2.0)
-                opacity = random.uniform(0.65, 1.0)
-                tags_html += f'<span style="font-size:{size}rem; opacity:{opacity}; margin: 8px; display: inline-block; color:#991B1B; font-family:\'Cinzel\', serif;">{tag}</span>'
-            <div>
-            st.markdown(f'<div class="word-cloud-container">{tags_html}</div>', unsafe_allow_html=True)
+                size_pct = random.randint(90, 115)  # Pequena variação tipográfica harmônica
+                tags_html += f'<span class="vintage-tag" style="font-size: {size_pct}%;">{tag}</span>'
             
+            st.markdown(f'<div class="word-cloud-container">{tags_html}</div>', unsafe_allow_html=True)
             
             # Quadro de ATENÇÃO Solicitado
             st.markdown(f"""
@@ -380,13 +365,15 @@ if opcao != "Selecione...":
             """, unsafe_allow_html=True)
 
         with f2:
-            st.subheader("🛡️Como garantir pelo menos um pouco de segurança?")
+            st.subheader("🛡️ Como garantir pelo menos um pouco de segurança?")
             st.markdown("Siga as orientações práticas para se proteger dentro do aplicativo:")
             
             for d in analise['dicas_protecao']:
                 with st.expander(f"⚙️ {d['titulo']}"):
                     for i, p in enumerate(d['passos'], 1): 
                         st.write(f"**{i}º Passo:** {p}")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
             
             # Botão de download do PDF robusto
             if PDF_DISPONIVEL:
@@ -402,15 +389,27 @@ if opcao != "Selecione...":
             else:
                 st.warning("O motor de PDFs está offline no momento. Utilize o guia na tela.")
         
+        # LINHA DIVISÓRIA SOLICITADA entre o quadro de destaque e o gráfico comparativo
         st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 
- # GRÁFICO E INTERPRETAÇÃO PERSONALIZADA
+        # --- GRÁFICO E INTERPRETAÇÃO PERSONALIZADA ---
         st.subheader("📊 Comparativo de Periculosidade")
         df_p = pd.DataFrame({'Plataforma': list(ACERVO_CONTINGENCIA.keys()), 'Risco': [v['pontuacao_risco'] for v in ACERVO_CONTINGENCIA.values()]}).sort_values('Risco', ascending=True)
         
-        fig = px.bar(df_p, x='Risco', y='Plataforma', orientation='h', color='Risco', color_continuous_scale=['#F5D04C', '#D4AF37', '#991B1B'])
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_family="Cinzel", font_color="#162E5C", margin=dict(l=20, r=20, t=10, b=10))
-        st.plotly_chart(fig, use_container_width=True)
+        if PLOTLY_DISPONIVEL:
+            fig = px.bar(df_p, x='Risco', y='Plataforma', orientation='h', color='Risco', color_continuous_scale=['#F5D04C', '#D4AF37', '#991B1B'])
+            fig.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)', 
+                plot_bgcolor='rgba(0,0,0,0)', 
+                font_family="Cinzel", 
+                font_color="#162E5C", 
+                margin=dict(l=20, r=20, t=10, b=10),
+                xaxis=dict(showgrid=False, range=[0, 100], title="Nível de Risco (%)"),
+                yaxis=dict(showgrid=False, title="")
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.bar_chart(data=df_p, x='Plataforma', y='Risco', color='#D4AF37')
 
         # RELATÓRIO DINÂMICO PERSONALIZADO
         outros_riscos = [v['pontuacao_risco'] for k, v in ACERVO_CONTINGENCIA.items() if k != opcao]
@@ -418,7 +417,7 @@ if opcao != "Selecione...":
         status = "acima" if analise['pontuacao_risco'] > avg_risco else "abaixo"
         
         st.markdown(f"""
-            <div class="parchment-card" style="border-top: 4px solid #162E5C; min-height: auto;">
+            <div class="parchment-card" style="border-top: 4px solid #162E5C; height: auto; min-height: auto; margin-top: 20px;">
                 <h4 style="margin-top:0">📜 Interpretação do Espelho: {opcao}</h4>
                 <p>Ao observarmos o reino digital, o <b>{opcao}</b> se destaca com um nível de risco de <b>{analise['pontuacao_risco']}%</b>, 
                 o que o coloca <b>{status}</b> da média de periculosidade das outras plataformas avaliadas ({avg_risco:.1f}%).</p>
@@ -427,6 +426,7 @@ if opcao != "Selecione...":
                 Em comparação aos outros convidados deste baile, sua postura exige vigilância { "redobrada" if status == "acima" else "moderada" }.</p>
             </div>
         """, unsafe_allow_html=True)
+        
         st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 
         # --- 4. NOTÍCIAS RELACIONADAS ---
@@ -453,7 +453,7 @@ if opcao != "Selecione...":
                     data1 = noticias[0].find('pubDate').text[:16]
                     
                     st.markdown(f"""
-                        <div class="parchment-card" style="min-height: 200px;">
+                        <div class="parchment-card" style="height: auto; min-height: 200px;">
                             <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="{link1}" target="_blank" style="text-decoration: none; color: #162E5C;">{titulo1}</a></h4>
                             <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: {fonte1} | Publicado em: {data1}</p>
                             <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Clique no título acima para conferir a reportagem diretamente da fonte original.</p>
@@ -469,7 +469,7 @@ if opcao != "Selecione...":
                         data2 = noticias[1].find('pubDate').text[:16]
                         
                         st.markdown(f"""
-                            <div class="parchment-card" style="min-height: 200px;">
+                            <div class="parchment-card" style="height: auto; min-height: 200px;">
                                 <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="{link2}" target="_blank" style="text-decoration: none; color: #162E5C;">{titulo2}</a></h4>
                                 <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: {fonte2} | Publicado em: {data2}</p>
                                 <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Acompanhe a segunda cobertura do cenário regulatório internacional desta plataforma.</p>
@@ -483,7 +483,7 @@ if opcao != "Selecione...":
             col_n1, col_n2 = st.columns(2)
             with col_n1:
                 st.markdown(f"""
-                    <div class="parchment-card" style="min-height: 200px;">
+                    <div class="parchment-card" style="height: auto; min-height: 200px;">
                         <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="https://g1.globo.com/tecnologia/" target="_blank" style="text-decoration: none; color: #162E5C;">{opcao} e Investigações de Tratamento de Dados</a></h4>
                         <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: Portal G1 Tecnologia</p>
                         <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Acompanhe as notícias sobre as auditorias mais recentes da ANPD envolvendo tratamento de informações sensíveis no Brasil.</p>
@@ -491,7 +491,7 @@ if opcao != "Selecione...":
                 """, unsafe_allow_html=True)
             with col_n2:
                 st.markdown(f"""
-                    <div class="parchment-card" style="min-height: 200px;">
+                    <div class="parchment-card" style="height: auto; min-height: 200px;">
                         <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="https://www.bbc.com/portuguese/topics/c40g969r280t" target="_blank" style="text-decoration: none; color: #162E5C;">Mudanças nas Políticas e Regulamentações da Controladora do {opcao}</a></h4>
                         <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: BBC Brasil</p>
                         <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Análise crítica sobre as novas regras globais de inteligência artificial e privacidade de dados de grandes corporações.</p>
