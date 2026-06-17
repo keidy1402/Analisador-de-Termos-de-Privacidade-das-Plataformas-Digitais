@@ -356,7 +356,7 @@ if opcao != "Selecione...":
         # --- SINAIS DE ALERTA & ESCUDO DE DEFESA ---
         f1, f2 = st.columns(2)
         with f1:
-            st.subheader("🚩 Sinais de Alerta")
+            st.subheader("🚩Sinais de alerta - RED FLAGS:")
             
             # Nuvem de Palavras Dinâmica gerada via CSS
             tags_html = ""
@@ -378,7 +378,7 @@ if opcao != "Selecione...":
             """, unsafe_allow_html=True)
 
         with f2:
-            st.subheader("🛡️ Escudo de Defesa")
+            st.subheader("🛡️Como garantir pelo menos um pouco de segurança?")
             st.markdown("Siga as orientações práticas para se proteger dentro do aplicativo:")
             
             for d in analise['dicas_protecao']:
@@ -391,7 +391,7 @@ if opcao != "Selecione...":
                 pdf_output = gerar_pdf_corrigido(opcao, analise)
                 if pdf_output:
                     st.download_button(
-                        label="📜 Baixar Guia Prático em PDF", 
+                        label="📜 Baixar esse Guia Prático em PDF", 
                         data=pdf_output, 
                         file_name=f"Escudo_Defesa_{opcao}.pdf", 
                         mime="application/pdf", 
@@ -399,6 +399,7 @@ if opcao != "Selecione...":
                     )
             else:
                 st.warning("O motor de PDFs está offline no momento. Utilize o guia na tela.")
+                st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 
  # GRÁFICO E INTERPRETAÇÃO PERSONALIZADA
         st.subheader("📊 Comparativo de Periculosidade")
@@ -423,6 +424,7 @@ if opcao != "Selecione...":
                 Em comparação aos outros convidados deste baile, sua postura exige vigilância { "redobrada" if status == "acima" else "moderada" }.</p>
             </div>
         """, unsafe_allow_html=True)
+        st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 
         # --- 4. NOTÍCIAS RELACIONADAS ---
         st.markdown(f"### 📰 O Que Estão Falando Sobre a Privacidade do {opcao}?")
