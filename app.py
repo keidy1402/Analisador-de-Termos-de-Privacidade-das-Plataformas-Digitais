@@ -400,40 +400,6 @@ if opcao != "Selecione...":
             else:
                 st.warning("O motor de PDFs está offline no momento. Utilize o guia na tela.")
 
-        st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
-        st.subheader("📊 Comparativo Geral de Periculosidade")
-        
-        # Estrutura de dados do gráfico
-        df_plot = pd.DataFrame({
-            'Plataforma': ["Facebook", "Instagram", "Snapchat", "TikTok", "Twitter (X)", "WhatsApp", "YouTube"],
-            'Risco': [88, 85, 65, 90, 75, 55, 70]
-        }).sort_values('Risco', ascending=True)
-
-        if PLOTLY_DISPONIVEL:
-            fig = px.bar(
-                df_plot, 
-                x='Risco', 
-                y='Plataforma', 
-                orientation='h',
-                color='Risco', 
-                color_continuous_scale=['#F5D04C', '#D4AF37', '#991B1B'] # Degradê temático
-            )
-            
-            # Customizando para integrar perfeitamente com o fundo de pergaminho
-            fig.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)', 
-                plot_bgcolor='rgba(0,0,0,0)',
-                font_family="Cinzel", 
-                font_color="#162E5C",
-                margin=dict(l=20, r=20, t=10, b=10),
-                xaxis=dict(showgrid=False, range=[0, 100], title="Nível de Risco (%)"), 
-                yaxis=dict(showgrid=False, title="")
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            # Fallback nativo ultra-seguro se o Plotly falhar por falta de dependências no GitHub
-            st.bar_chart(data=df_plot, x='Plataforma', y='Risco', color='#D4AF37')
-
  # GRÁFICO E INTERPRETAÇÃO PERSONALIZADA
         st.subheader("📊 Comparativo de Periculosidade")
         df_p = pd.DataFrame({'Plataforma': list(ACERVO_CONTINGENCIA.keys()), 'Risco': [v['pontuacao_risco'] for v in ACERVO_CONTINGENCIA.values()]}).sort_values('Risco', ascending=True)
