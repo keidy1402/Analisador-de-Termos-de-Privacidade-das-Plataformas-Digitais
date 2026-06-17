@@ -348,6 +348,7 @@ if opcao != "Selecione...":
                 <div class="score-container">
                     <div class="score-number">{analise["pontuacao_risco"]}%</div>
                     <div style="font-family: 'Cinzel', serif; margin-top: 8px;">Risco Geral Detectado</div>
+                <div>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -366,6 +367,7 @@ if opcao != "Selecione...":
                 tags_html += f'<span style="font-size:{size}rem; opacity:{opacity}; margin: 8px; display: inline-block; color:#991B1B; font-family:\'Cinzel\', serif;">{tag}</span>'
             
             st.markdown(f'<div class="word-cloud-container">{tags_html}</div>', unsafe_allow_html=True)
+            </div> 
             
             # Quadro de ATENÇÃO Solicitado
             st.markdown(f"""
@@ -399,7 +401,8 @@ if opcao != "Selecione...":
                     )
             else:
                 st.warning("O motor de PDFs está offline no momento. Utilize o guia na tela.")
-                st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 
  # GRÁFICO E INTERPRETAÇÃO PERSONALIZADA
         st.subheader("📊 Comparativo de Periculosidade")
