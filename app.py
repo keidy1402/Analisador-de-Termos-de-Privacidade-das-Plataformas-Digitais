@@ -449,72 +449,72 @@ if opcao != "Selecione...":
         """, unsafe_allow_html=True)
 
         # --- 4. NOTÍCIAS RELACIONADAS ---
-            st.markdown(f"### 📰 O Que Estão Falando Sobre a Privacidade do {opcao_plataforma}?")
-            st.markdown("Fique por dentro das últimas manchetes e investigações de tratamento de dados:")
-            
-            termo_busca = f"{opcao_plataforma} privacidade"
-            termo_codificado = urllib.parse.quote(termo_busca)
-            url_feed = f"https://news.google.com/rss/search?q={termo_codificado}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+        st.markdown(f"### 📰 O Que Estão Falando Sobre a Privacidade do {opcao}?")
+        st.markdown("Fique por dentro das últimas manchetes e investigações de tratamento de dados:")
+        
+        termo_busca = f"{opcao} privacidade"
+        termo_codificado = urllib.parse.quote(termo_busca)
+        url_feed = f"https://news.google.com/rss/search?q={termo_codificado}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
 
-            try:
-                resposta = requests.get(url_feed, timeout=5)
-                root = ET.fromstring(resposta.content)
-                noticias = root.findall('.//item')[:2]
+        try:
+            resposta = requests.get(url_feed, timeout=5)
+            root = ET.fromstring(resposta.content)
+            noticias = root.findall('.//item')[:2]
+            
+            if noticias:
+                col_n1, col_n2 = st.columns(2)
                 
-                if noticias:
-                    col_n1, col_n2 = st.columns(2)
+                # Notícia 1
+                with col_n1:
+                    titulo1 = noticias[0].find('title').text
+                    link1 = noticias[0].find('link').text
+                    fonte1 = noticias[0].find('source').text if noticias[0].find('source') is not None else "Portal de Notícias"
+                    data1 = noticias[0].find('pubDate').text[:16]
                     
-                    # Notícia 1
-                    with col_n1:
-                        titulo1 = noticias[0].find('title').text
-                        link1 = noticias[0].find('link').text
-                        fonte1 = noticias[0].find('source').text if noticias[0].find('source') is not None else "Portal de Notícias"
-                        data1 = noticias[0].find('pubDate').text[:16]
+                    st.markdown(f"""
+                        <div class="parchment-card" style="min-height: 200px;">
+                            <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="{link1}" target="_blank" style="text-decoration: none; color: #162E5C;">{titulo1}</a></h4>
+                            <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: {fonte1} | Publicado em: {data1}</p>
+                            <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Clique no título acima para conferir a reportagem diretamente da fonte original.</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                
+                # Notícia 2
+                with col_n2:
+                    if len(noticias) > 1:
+                        titulo2 = noticias[1].find('title').text
+                        link2 = noticias[1].find('link').text
+                        fonte2 = noticias[1].find('source').text if noticias[1].find('source') is not None else "Portal de Notícias"
+                        data2 = noticias[1].find('pubDate').text[:16]
                         
                         st.markdown(f"""
                             <div class="parchment-card" style="min-height: 200px;">
-                                <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="{link1}" target="_blank" style="text-decoration: none; color: #162E5C;">{titulo1}</a></h4>
-                                <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: {fonte1} | Publicado em: {data1}</p>
-                                <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Clique no título acima para conferir a reportagem diretamente da fonte original.</p>
+                                <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="{link2}" target="_blank" style="text-decoration: none; color: #162E5C;">{titulo2}</a></h4>
+                                <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: {fonte2} | Publicado em: {data2}</p>
+                                <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Acompanhe a segunda cobertura do cenário regulatório internacional desta plataforma.</p>
                             </div>
                         """, unsafe_allow_html=True)
-                    
-                    # Notícia 2
-                    with col_n2:
-                        if len(noticias) > 1:
-                            titulo2 = noticias[1].find('title').text
-                            link2 = noticias[1].find('link').text
-                            fonte2 = noticias[1].find('source').text if noticias[1].find('source') is not None else "Portal de Notícias"
-                            data2 = noticias[1].find('pubDate').text[:16]
-                            
-                            st.markdown(f"""
-                                <div class="parchment-card" style="min-height: 200px;">
-                                    <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="{link2}" target="_blank" style="text-decoration: none; color: #162E5C;">{titulo2}</a></h4>
-                                    <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: {fonte2} | Publicado em: {data2}</p>
-                                    <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Acompanhe a segunda cobertura do cenário regulatório internacional desta plataforma.</p>
-                                </div>
-                            """, unsafe_allow_html=True)
-                else:
-                    st.warning("Não encontramos notícias recentes específicas para esta plataforma no momento.")
-            
-            except Exception as e:
-                # Fallback visual seguro caso ocorra erro de conexão/RSS
-                col_n1, col_n2 = st.columns(2)
-                with col_n1:
-                    st.markdown(f"""
-                        <div class="parchment-card" style="min-height: 200px;">
-                            <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="https://g1.globo.com/tecnologia/" target="_blank" style="text-decoration: none; color: #162E5C;">{opcao_plataforma} e Investigações de Tratamento de Dados</a></h4>
-                            <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: Portal G1 Tecnologia</p>
-                            <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Acompanhe as notícias sobre as auditorias mais recentes da ANPD envolvendo tratamento de informações sensíveis no Brasil.</p>
-                        </div>
-                    """, unsafe_allow_html=True)
-                with col_n2:
-                    st.markdown(f"""
-                        <div class="parchment-card" style="min-height: 200px;">
-                            <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="https://www.bbc.com/portuguese/topics/c40g969r280t" target="_blank" style="text-decoration: none; color: #162E5C;">Mudanças nas Políticas e Regulamentações da Controladora do {opcao_plataforma}</a></h4>
-                            <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: BBC Brasil</p>
-                            <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Análise crítica sobre as novas regras globais de inteligência artificial e privacidade de dados de grandes corporações.</p>
-                        </div>
-                    """, unsafe_allow_html=True)
+            else:
+                st.warning("Não encontramos notícias recentes específicas para esta plataforma no momento.")
+        
+        except Exception as e:
+            # Fallback visual seguro caso ocorra erro de conexão/RSS
+            col_n1, col_n2 = st.columns(2)
+            with col_n1:
+                st.markdown(f"""
+                    <div class="parchment-card" style="min-height: 200px;">
+                        <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="https://g1.globo.com/tecnologia/" target="_blank" style="text-decoration: none; color: #162E5C;">{opcao} e Investigações de Tratamento de Dados</a></h4>
+                        <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: Portal G1 Tecnologia</p>
+                        <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Acompanhe as notícias sobre as auditorias mais recentes da ANPD envolvendo tratamento de informações sensíveis no Brasil.</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            with col_n2:
+                st.markdown(f"""
+                    <div class="parchment-card" style="min-height: 200px;">
+                        <h4 style="font-size: 1.15rem; margin-bottom: 8px;"><a href="https://www.bbc.com/portuguese/topics/c40g969r280t" target="_blank" style="text-decoration: none; color: #162E5C;">Mudanças nas Políticas e Regulamentações da Controladora do {opcao}</a></h4>
+                        <p style="color: #8C7A6B; font-size: 0.8rem; margin-bottom: 12px; font-style: italic;">Fonte: BBC Brasil</p>
+                        <p style="font-size: 0.95rem; margin: 0; line-height: 1.5;">Análise crítica sobre as novas regras globais de inteligência artificial e privacidade de dados de grandes corporações.</p>
+                    </div>
+                """, unsafe_allow_html=True)
 
 st.markdown('<div class="footer">FGV-ECMI | Aluna: Keidy Alves Pizzetti Amaro | Prof. Josir Gomes</div>', unsafe_allow_html=True)
