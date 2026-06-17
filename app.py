@@ -28,15 +28,31 @@ st.markdown("""
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Título do Site */
+        /* Área de Cabeçalho Centralizado */
+        .header-bloco {
+            text-align: center;
+            padding: 20px 0 10px 0;
+        }
+
+        /* Título do Site Fluido e Sem Quebras Artificiais */
         h1 {
             color: #104f7e !important;
             font-weight: 800 !important;
-            font-size: 2.1rem !important;
+            font-size: 2.3rem !important;
             letter-spacing: -0.03em !important;
-            margin-bottom: 6px !important;
+            margin-bottom: 8px !important;
             line-height: 1.2 !important;
+            text-align: center;
         }
+        
+        .subtitulo-site {
+            color: #718096;
+            margin: 0 auto 25px auto;
+            font-size: 1.05rem;
+            text-align: center;
+            max-width: 700px;
+        }
+        
         h2, h3 {
             color: #104f7e !important;
             font-weight: 700 !important;
@@ -44,18 +60,24 @@ st.markdown("""
             margin-top: 5px !important;
         }
         
-        /* ESTILIZAÇÃO DO SELECTBOX */
+        /* Centralizador do Selectbox */
+        .seletor-container {
+            max-width: 450px;
+            margin: 0 auto 30px auto;
+        }
+        
+        /* ESTILIZAÇÃO DO SELECTBOX (Estilo Pílula Perfeita) */
         div[data-testid="stSelectbox"] > div :first-child {
             background-color: #ffffff !important;
-            border: 1.5px solid #104f7e !important;
+            border: 1.8px solid #104f7e !important;
             border-radius: 24px !important;
-            padding: 2px 16px !important;
-            box-shadow: 4px;
+            padding: 4px 20px !important;
+            box-shadow: 0 5px 15px rgba(16, 79, 126, 0.06) !important;
         }
         div[data-testid="stSelectbox"] div[role="button"] span {
             color: #104f7e !important;
             font-weight: 600 !important;
-            font-size: 0.95rem !important;
+            font-size: 1rem !important;
         }
         div[data-testid="stSelectbox"] svg {
             fill: #104f7e !important;
@@ -93,7 +115,7 @@ st.markdown("""
             margin-bottom: 8px;
         }
 
-        /* Lista Fina de Indicadores (Substituindo as Bolinhas) */
+        /* Lista Fina de Indicadores */
         .lista-riscos {
             list-style: none;
             padding-left: 0;
@@ -134,7 +156,7 @@ st.markdown("""
             color: #c03131 !important;
         }
 
-        /* Abas Laterais/Superiores Clean */
+        /* Abas Clean */
         .stTabs [data-baseweb="tab"] {
             font-weight: 600 !important;
             color: #718096 !important;
@@ -164,7 +186,7 @@ st.markdown("""
 try:
     client = genai.Client()
 except Exception as e:
-    st.error("Erro ao inicializar a API do Gemini. Verifique a chave GEMINI_API_KEY nos Secrets.")
+    st.error("Erro ao inicializar a API do Gemini. Verifique a chave nos Secrets.")
     client = None
 
 MAPA_PLATAFORMAS = {
@@ -215,18 +237,18 @@ dados_risco_global = {
     'Nível de Risco (0-100)': [88, 85, 65, 90, 75, 55, 70]
 }
 
-# --- TOOLBAR SUPERIOR COMPACTA (Logotipo por Extenso + Menu Lateralizado) ---
-col_head_left, col_head_right = st.columns([7, 3])
+# --- NOVO DESIGN DO CABEÇALHO (Centralizado e Espaçoso) ---
+if os.path.exists("logo.png"):
+    st.markdown("<div class='header-bloco'>", unsafe_allow_html=True)
+    st.image("logo.png", width=380, use_column_width=False)
+    st.markdown("</div>", unsafe_allow_html=True)
+else:
+    st.markdown("<h1>Analisador de Termos de Privacidade das Plataformas Digitais</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitulo-site'>Transparência digital e auditoria inteligente de dados contratuais baseada em inteligência artificial.</p>", unsafe_allow_html=True)
 
-with col_head_left:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=340)
-    else:
-        st.markdown("<h1>Analisador de Termos de Privacidade das Plataformas Digitais</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='color: #718096; margin:0; font-size:1rem;'>Transparência digital e auditoria inteligente de dados contratuais.</p>", unsafe_allow_html=True)
-
-with col_head_right:
-    st.write("") # Alinhamento vertical simples
+# Centralizador do Menu Seletor em uma coluna focada
+_, col_seletor_central, _ = st.columns([1, 2, 1])
+with col_seletor_central:
     opcao_plataforma = st.selectbox("", ["Selecione uma plataforma..."] + list(MAPA_PLATAFORMAS.keys()))
 
 st.write("")
@@ -259,7 +281,6 @@ if opcao_plataforma != "Selecione uma plataforma...":
                 
                 with col_tags:
                     st.markdown("<h3 style='font-size: 1.2rem; color: #4a5568;'>🚩 Cláusulas de Alerta Mapeadas</h3>", unsafe_allow_html=True)
-                    # Gerando uma lista vertical pura ao invés de bolinhas soltas
                     itens_html = "".join([f"<li class='item-risco'>{tag}</li>" for tag in analise['red_flags']])
                     st.markdown(f"<ul class='lista-riscos'>{itens_html}</ul>", unsafe_allow_html=True)
                     
@@ -323,12 +344,12 @@ if opcao_plataforma != "Selecione uma plataforma...":
     else:
         st.error(f"Arquivo '{arquivo_alvo}' não encontrado.")
 else:
-    st.title("Analisador de Termos de Privacidade das Plataformas Digitais")
+    # Caixa informativa inicial quando nenhuma plataforma está selecionada
     st.markdown("""
-        <div style="background-color: #ffffff; padding: 40px; border-radius: 16px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin-top: 20px; border: 1px solid #e2e8f0;">
+        <div style="background-color: #ffffff; padding: 40px; border-radius: 16px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin: 10px auto; border: 1px solid #e2e8f0; max-width: 800px;">
             <h3 style="color: #104f7e; margin-top:0; font-size: 1.3rem;">🌹 Decodifique seus Direitos na Rede</h3>
-            <p style="color: #718096; max-width: 580px; margin: 10px auto 0 auto; font-size: 0.98rem; line-height: 1.6;">
-                Termos jurídicos extensos escondem monitoramentos complexos. Use o menu superior direito para selecionar uma plataforma e obter um relatório imediato gerado por inteligência artificial.
+            <p style="color: #718096; margin: 10px auto 0 auto; font-size: 0.98rem; line-height: 1.6;">
+                Termos jurídicos extensos escondem monitoramentos complexos. Use o menu de seleção acima para escolher uma plataforma digital e obter um relatório imediato de conformidade e riscos gerado por inteligência artificial.
             </p>
         </div>
     """, unsafe_allow_html=True)
