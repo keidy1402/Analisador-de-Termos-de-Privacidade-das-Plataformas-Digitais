@@ -447,6 +447,7 @@ if opcao != "Selecione...":
                 onde a conveniência do serviço oculta um perfilamento profundo de seus usuários.</p>
             </div>
         """, unsafe_allow_html=True)
+        st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 
         # --- 4. NOTÍCIAS RELACIONADAS ---
         st.markdown(f"### 📰 O Que Estão Falando Sobre a Privacidade do {opcao}?")
