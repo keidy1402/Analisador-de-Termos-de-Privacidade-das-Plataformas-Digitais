@@ -365,9 +365,9 @@ if opcao != "Selecione...":
                 size = random.uniform(1.2, 2.0)
                 opacity = random.uniform(0.65, 1.0)
                 tags_html += f'<span style="font-size:{size}rem; opacity:{opacity}; margin: 8px; display: inline-block; color:#991B1B; font-family:\'Cinzel\', serif;">{tag}</span>'
-            
+            <div>
             st.markdown(f'<div class="word-cloud-container">{tags_html}</div>', unsafe_allow_html=True)
-            </div> 
+            
             
             # Quadro de ATENÇÃO Solicitado
             st.markdown(f"""
