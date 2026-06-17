@@ -434,17 +434,27 @@ if opcao != "Selecione...":
             # Fallback nativo ultra-seguro se o Plotly falhar por falta de dependências no GitHub
             st.bar_chart(data=df_plot, x='Plataforma', y='Risco', color='#D4AF37')
 
-        # --- RELATÓRIO DE INTERPRETAÇÃO DO GRÁFICO ---
+ # GRÁFICO E INTERPRETAÇÃO PERSONALIZADA
+        st.subheader("📊 Comparativo de Periculosidade")
+        df_p = pd.DataFrame({'Plataforma': list(ACERVO_CONTINGENCIA.keys()), 'Risco': [v['pontuacao_risco'] for v in ACERVO_CONTINGENCIA.values()]}).sort_values('Risco', ascending=True)
+        
+        fig = px.bar(df_p, x='Risco', y='Plataforma', orientation='h', color='Risco', color_continuous_scale=['#F5D04C', '#D4AF37', '#991B1B'])
+        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_family="Cinzel", font_color="#162E5C", margin=dict(l=20, r=20, t=10, b=10))
+        st.plotly_chart(fig, use_container_width=True)
+
+        # RELATÓRIO DINÂMICO PERSONALIZADO
+        outros_riscos = [v['pontuacao_risco'] for k, v in ACERVO_CONTINGENCIA.items() if k != opcao]
+        avg_risco = sum(outros_riscos) / len(outros_riscos)
+        status = "acima" if analise['pontuacao_risco'] > avg_risco else "abaixo"
+        
         st.markdown(f"""
-            <div class="parchment-card" style="border-top: 4px solid #162E5C; margin-top: 15px;">
-                <h4 style="margin-top:0">📜 Interpretação do Espelho</h4>
-                <p>O gráfico acima revela a hierarquia das sombras no reino digital. 
-                Observamos que o <b>TikTok</b> e o <b>Facebook</b> se posicionam como as "Feras" mais dominantes, 
-                apresentando níveis de risco críticos (acima de 85%) devido à coleta agressiva de dados biométricos e comportamentais. 
-                Em contrapartida, o <b>WhatsApp</b>, embora pertença à Meta, figura como o "Convidado" mais seguro desta lista, 
-                protegido por sua criptografia de mensagens, embora ainda exija cautela com seus metadados.</p>
-                <p>Plataformas como <b>YouTube</b> e <b>Instagram</b> mantêm um equilíbrio perigoso, 
-                onde a conveniência do serviço oculta um perfilamento profundo de seus usuários.</p>
+            <div class="parchment-card" style="border-top: 4px solid #162E5C; min-height: auto;">
+                <h4 style="margin-top:0">📜 Interpretação do Espelho: {opcao}</h4>
+                <p>Ao observarmos o reino digital, o <b>{opcao}</b> se destaca com um nível de risco de <b>{analise['pontuacao_risco']}%</b>, 
+                o que o coloca <b>{status}</b> da média de periculosidade das outras plataformas avaliadas ({avg_risco:.1f}%).</p>
+                <p>Enquanto o <b>TikTok</b> e o <b>Facebook</b> permanecem como as feras mais vorazes na coleta de dados biometrizados e comportamentais, 
+                o <b>{opcao}</b> apresenta uma sombra particular focada em <i>{analise['palavra_mais_critica']}</i>. 
+                Em comparação aos outros convidados deste baile, sua postura exige vigilância { "redobrada" if status == "acima" else "moderada" }.</p>
             </div>
         """, unsafe_allow_html=True)
 
