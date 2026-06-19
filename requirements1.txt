@@ -1,0 +1,9 @@
+streamlit
+pandas
+google
+google.genai
+pydantic 
+os
+urllib
+ElementTree
+requests
